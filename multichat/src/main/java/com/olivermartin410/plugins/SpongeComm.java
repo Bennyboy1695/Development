@@ -10,23 +10,23 @@ import org.spongepowered.api.network.ChannelBinding.RawDataChannel;
 import org.spongepowered.api.network.ChannelRegistrar;
 import org.spongepowered.api.plugin.Plugin;
 
-@Plugin(id = "multichat", name = "MultiChat - Sponge Bridge", version = "1.0")
+@Plugin(id = "multichat", name = "MultiChat Sponge", version = "1.4")
 public final class SpongeComm {
-	
+
 	ChannelRegistrar channelRegistrar;
 	RawDataChannel channel;
-	
+
 	@Listener
 	public void onServerStart(GameStartedServerEvent event) {
-		 channelRegistrar = Sponge.getGame().getChannelRegistrar();
-	     ChannelBinding.RawDataChannel channel = Sponge.getGame().getChannelRegistrar().createRawChannel(this, "MultiChat");
-	     channel.addListener(Platform.Type.SERVER, new MultiChatRawDataListener(channel));
-	     this.channel = channel;
+		channelRegistrar = Sponge.getGame().getChannelRegistrar();
+		ChannelBinding.RawDataChannel channel = Sponge.getGame().getChannelRegistrar().createRawChannel(this, "MultiChat");
+		channel.addListener(Platform.Type.SERVER, new MultiChatRawDataListener(channel));
+		this.channel = channel;
 	}
-	
+
 	@Listener
 	public void onServerStop(GameStoppingServerEvent event) {
 		Sponge.getChannelRegistrar().unbindChannel(channel);
-    }
+	}
 
 }

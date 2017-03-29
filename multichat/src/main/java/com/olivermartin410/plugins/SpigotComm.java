@@ -4,9 +4,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,105 +31,239 @@ import org.bukkit.scheduler.BukkitRunnable;
 import net.milkbowl.vault.chat.Chat;
 
 public class SpigotComm
-  extends JavaPlugin
-  implements PluginMessageListener, Listener
+extends JavaPlugin
+implements PluginMessageListener, Listener
 {
-	
+
+	public static Map<UUID,String> nicknames = new HashMap<UUID,String>();
 	public static Chat chat = null;
 	public static boolean vault;
-	
-  public void onEnable()
-  {
-    getServer().getMessenger().registerOutgoingPluginChannel(this, "MultiChat");
-    getServer().getMessenger().registerIncomingPluginChannel(this, "MultiChat", this);
-    getServer().getPluginManager().registerEvents(this, this);
-    vault = setupChat();
-    if (vault) {
-    	System.out.println("MultiChat has successfully connected to vault!");
-    }
-  }
-  
-  private boolean setupChat()
-  {
-      RegisteredServiceProvider<Chat> chatProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.chat.Chat.class);
-      if (chatProvider != null) {
-          chat = chatProvider.getProvider();
-      }
-      
-      return (chat != null);
-  }
-  
-  public void onDisable() {}
-  
-  public void sendMessage(String message, String playername)
-  {
-    ByteArrayOutputStream stream = new ByteArrayOutputStream();
-    DataOutputStream out = new DataOutputStream(stream);
-    try
-    {
-      out.writeUTF(message);
-      out.writeUTF(playername);
-    }
-    catch (IOException e)
-    {
-      e.printStackTrace();
-    }
-    ((PluginMessageRecipient)getServer().getOnlinePlayers().toArray()[0]).sendPluginMessage(this, "MultiChat", stream.toByteArray());
-  }
-  
-  public void onPluginMessageReceived(String channel, Player player, byte[] bytes)
-  {
-    if (channel.equals("MultiChat"))
-    {
-      ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
-      DataInputStream in = new DataInputStream(stream);
-      try
-      {
-    	  	String playername = in.readUTF();
-        	if (vault) {
-        		if (Bukkit.getPlayer(playername).getDisplayName().replaceAll("§", "&").contains(chat.getPlayerPrefix(Bukkit.getPlayer(playername)))) {
+	public static File configDir;
+
+	public void onEnable()
+	{
+		configDir = getDataFolder();
+		if (!getDataFolder().exists())
+		{
+			System.out.println("[MultiChatBridge] Creating plugin directory!");
+			getDataFolder().mkdirs();
+			configDir = getDataFolder();
+		}
+
+		File f = new File(configDir, "Nicknames.dat");
+		if ((f.exists()) && (!f.isDirectory()))
+		{
+			System.out.println("[MultiChatBridge] Attempting startup load for Nicknames");
+			nicknames = loadNicknames();
+			System.out.println("[MultiChatBridge] Load completed!");
+		}
+		else
+		{
+			System.out.println("[MultiChatBridge] Some nicknames files do not exist to load. Must be first startup!");
+			System.out.println("[MultiChatBridge] Enabling Nicknames! :D");
+			System.out.println("[MultiChatBridge] Attempting to create hash files!");
+			saveNicknames();
+			System.out.println("[MultiChatBridge] The files were created!");
+		}
+		getServer().getMessenger().registerOutgoingPluginChannel(this, "MultiChat");
+		getServer().getMessenger().registerIncomingPluginChannel(this, "MultiChat", this);
+		getServer().getPluginManager().registerEvents(this, this);
+		vault = setupChat();
+		if (vault) {
+			System.out.println("MultiChat has successfully connected to vault!");
+		}
+	}
+
+	private boolean setupChat()
+	{
+		RegisteredServiceProvider<Chat> chatProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.chat.Chat.class);
+		if (chatProvider != null) {
+			chat = chatProvider.getProvider();
+		}
+
+		return (chat != null);
+	}
+
+	public void onDisable() {
+		saveNicknames();
+	}
+
+	public void sendMessage(String message, String playername)
+	{
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		DataOutputStream out = new DataOutputStream(stream);
+		try
+		{
+			out.writeUTF(message);
+			out.writeUTF(playername);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		((PluginMessageRecipient)getServer().getOnlinePlayers().toArray()[0]).sendPluginMessage(this, "MultiChat", stream.toByteArray());
+	}
+
+	public void onPluginMessageReceived(String channel, Player player, byte[] bytes)
+	{
+		if (channel.equals("MultiChat"))
+		{
+			ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
+			DataInputStream in = new DataInputStream(stream);
+			try
+			{
+				String playername = in.readUTF();
+				/*if (vault) {
+        		if (Bukkit.getPlayer(playername).getDisplayName().replaceAll("§", "&").contains(chat.getPlayerPrefix(Bukkit.getPlayer(playername))) || Bukkit.getPlayer(playername).getDisplayName().contains(chat.getPlayerPrefix(Bukkit.getPlayer(playername)))) {
         			sendMessage(Bukkit.getPlayer(playername).getDisplayName(), playername);
         		} else {
         			sendMessage(chat.getPlayerPrefix(Bukkit.getPlayer(playername)) + Bukkit.getPlayer(playername).getDisplayName() + chat.getPlayerSuffix(Bukkit.getPlayer(playername)), playername);
         		}
         	} else {
         		sendMessage(Bukkit.getPlayer(playername).getDisplayName(), playername);
-        	}
-        }
-      catch (IOException e)
-      {
-        System.out.println("[MultiChatBridge] Failed to contact bungeecord");
-        
-        e.printStackTrace();
-      }
-    }
-  }
-  
-  @EventHandler
-  public void onLogin(final PlayerJoinEvent event)
-  {
-    new BukkitRunnable()
-    {
-      public void run()
-      {
-    	  String playername = event.getPlayer().getName();
-    	  if (vault) {
-      		if (Bukkit.getPlayer(playername).getDisplayName().replaceAll("§", "&").contains(chat.getPlayerPrefix(Bukkit.getPlayer(playername)))) {
-      			sendMessage(Bukkit.getPlayer(playername).getDisplayName(), playername);
-      		} else {
-      			sendMessage(chat.getPlayerPrefix(Bukkit.getPlayer(playername)) + Bukkit.getPlayer(playername).getDisplayName() + chat.getPlayerSuffix(Bukkit.getPlayer(playername)), playername);
-      		}
-      	} else {
-      		sendMessage(Bukkit.getPlayer(playername).getDisplayName(), playername);
-      	}
-        //SpigotComm.this.sendMessage(event.getPlayer().getDisplayName(), event.getPlayer().getName());
-      
-      }
-    }
-    
-      .runTaskLater(this, 10L);
-  }
-  
+        	}*/
+				String nickname;
+				if (nicknames.containsKey(Bukkit.getPlayer(playername).getUniqueId())) {
+					nickname = nicknames.get(Bukkit.getPlayer(playername).getUniqueId());
+				} else {
+					nickname =  Bukkit.getPlayer(playername).getName();
+				}
+				if (vault) {
+					sendMessage(chat.getPlayerPrefix(Bukkit.getPlayer(playername)) + nickname + chat.getPlayerSuffix(Bukkit.getPlayer(playername)), playername);
+					Bukkit.getPlayer(playername).setDisplayName((chat.getPlayerPrefix(Bukkit.getPlayer(playername)) + nickname + chat.getPlayerSuffix(Bukkit.getPlayer(playername))).replaceAll("&(?=[a-f,0-9,k-o,r])", "§"));
+				} else {
+					sendMessage(Bukkit.getPlayer(playername).getDisplayName().replaceAll(Bukkit.getPlayer(playername).getName(), nickname), playername);
+					Bukkit.getPlayer(playername).setDisplayName((nickname).replaceAll("&(?=[a-f,0-9,k-o,r])", "§"));
+				}
+			}
+			catch (IOException e)
+			{
+				System.out.println("[MultiChatBridge] Failed to contact bungeecord");
+
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@EventHandler
+	public void onLogin(final PlayerJoinEvent event)
+	{
+		new BukkitRunnable()
+		{
+			public void run()
+			{
+				String playername = event.getPlayer().getName();
+				String nickname;
+				if (nicknames.containsKey(Bukkit.getPlayer(playername).getUniqueId())) {
+					nickname = nicknames.get(Bukkit.getPlayer(playername).getUniqueId());
+					Bukkit.getPlayer(playername).setDisplayName(nickname);
+				} else {
+					nickname =  Bukkit.getPlayer(playername).getName();
+				}
+				if (vault) {
+					sendMessage(chat.getPlayerPrefix(Bukkit.getPlayer(playername)) + nickname + chat.getPlayerSuffix(Bukkit.getPlayer(playername)), playername);
+				} else {
+					sendMessage(Bukkit.getPlayer(playername).getDisplayName().replaceAll(Bukkit.getPlayer(playername).getName(), nickname), playername);
+				}
+			}
+		}
+
+		.runTaskLater(this, 10L);
+	}
+
+	private void addNickname(UUID uuid, String nickname) {
+		nicknames.put(uuid,nickname);
+	}
+
+	private void removeNickname(UUID uuid) {
+		nicknames.remove(uuid);
+	}
+
+	@Override
+	public boolean onCommand(CommandSender commandSender, Command cmd, String label, String[] args) {
+		if (cmd.getName().equalsIgnoreCase("nick")) {
+
+			Player sender;
+
+			if (commandSender instanceof Player) {
+				sender = (Player) commandSender;
+			} else {
+				commandSender.sendMessage(ChatColor.DARK_RED + "Only players can use this command!");
+				return true;
+			}
+
+			// Make sure that the player specified exactly one argument (the name of the player to freeze)
+
+			if (args.length != 2) {
+				// When onCommand() returns false, the help message associated with that command is displayed.
+				return false;
+			}
+
+			Player target = sender.getServer().getPlayer(args[0]);
+			// Make sure the player is online.
+			if (target == null) {
+				sender.sendMessage(ChatColor.DARK_RED + args[0] + " is not currently online so cannot be nicknamed!");
+				return true;
+			}
+
+			UUID targetUUID = target.getUniqueId();
+
+			if (args[1].equalsIgnoreCase("off")) {
+				removeNickname(targetUUID);
+				target.setDisplayName(target.getName());
+				sender.sendMessage(ChatColor.GREEN + args[0] + " has had their nickname removed!");
+				return true;
+			}
+
+			addNickname(targetUUID,args[1]);
+			target.setDisplayName(args[1]);
+
+			sender.sendMessage(ChatColor.GREEN + args[0] + " has been nicknamed!");
+
+			return true;
+		}
+		return false;
+	}
+
+	public static void saveNicknames()
+	{
+		try
+		{
+			File file = new File(configDir, "Nicknames.dat");
+			FileOutputStream saveFile = new FileOutputStream(file);
+			ObjectOutputStream out = new ObjectOutputStream(saveFile);
+			out.writeObject(nicknames);
+			out.close();
+			System.out.println("[MultiChatBridge] The nicknames file was successfully saved!");
+		}
+		catch (IOException e)
+		{
+			System.out.println("[MultiChatBridge] An error has occured writing the nicknames file!");
+			e.printStackTrace();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static HashMap<UUID, String> loadNicknames()
+	{
+		HashMap<UUID, String> result = null;
+		try
+		{
+			File file = new File(configDir, "Nicknames.dat");
+			FileInputStream saveFile = new FileInputStream(file);
+			ObjectInputStream in = new ObjectInputStream(saveFile);
+			result = (HashMap<UUID, String>)in.readObject();
+			in.close();
+			System.out.println("[MultiChatBridge] The nicknames file was successfully loaded!");
+		}
+		catch (IOException|ClassNotFoundException e)
+		{
+			System.out.println("[MultiChatBridge] An error has occured reading the nicknames file!");
+			e.printStackTrace();
+		}
+		return result;
+	}
+
 }
 
 

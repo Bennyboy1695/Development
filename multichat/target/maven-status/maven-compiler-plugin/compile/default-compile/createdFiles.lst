@@ -12,8 +12,10 @@ com\olivermartin410\plugins\SocialSpyCommand.class
 com\olivermartin410\plugins\TChatInfo.class
 com\olivermartin410\plugins\UUIDNameManager.class
 com\olivermartin410\plugins\MultiChat$3.class
+com\olivermartin410\plugins\CastControl.class
 com\olivermartin410\plugins\TGroupChatInfo.class
 com\olivermartin410\plugins\ACCCommand.class
+com\olivermartin410\plugins\CastCommand.class
 com\olivermartin410\plugins\MultiChat$1.class
 com\olivermartin410\plugins\BulletinCommand.class
 com\olivermartin410\plugins\SpigotComm$1.class
@@ -37,6 +39,7 @@ com\olivermartin410\plugins\Bulletins$1.class
 com\olivermartin410\plugins\ReplyCommand.class
 com\olivermartin410\plugins\ConfigManager.class
 com\olivermartin410\plugins\SpongeMultiChatMessage.class
+com\olivermartin410\plugins\ChatStream.class
 com\olivermartin410\plugins\MultiChat$6.class
 com\olivermartin410\plugins\GCCommand.class
 com\olivermartin410\plugins\GlobalCommand.class
