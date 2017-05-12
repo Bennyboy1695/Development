@@ -23,7 +23,7 @@ import net.md_5.bungee.event.EventHandler;
 
 public class MultiChat extends Plugin implements Listener {
 
-	public static String latestversion = "1.4.1";
+	public static String latestversion = "1.4.2";
 	public static Map<UUID, TChatInfo> modchatpreferences = new HashMap<UUID, TChatInfo>();
 	public static Map<UUID, TChatInfo> adminchatpreferences = new HashMap<UUID, TChatInfo>();
 	public static Map<String, TGroupChatInfo> groupchats = new HashMap<String, TGroupChatInfo>();
@@ -176,7 +176,7 @@ public class MultiChat extends Plugin implements Listener {
 		configman.startupConfig();
 		jmconfigman.startupConfig();
 		configversion = configman.config.getString("version");
-		if (configversion.equals(latestversion) || configversion.equals("1.3")  || configversion.equals("1.3.1")  || configversion.equals("1.3.2") || configversion.equals("1.3.3") || configversion.equals("1.3.4") || configversion.equals("1.4"))
+		if (configversion.equals(latestversion) || configversion.equals("1.3")  || configversion.equals("1.3.1")  || configversion.equals("1.3.2") || configversion.equals("1.3.3") || configversion.equals("1.3.4") || configversion.equals("1.4") || configversion.equals("1.4.1"))
 		{
 			getProxy().getPluginManager().registerListener(this, new Events());
 			getProxy().getPluginManager().registerListener(this, this);
@@ -190,8 +190,6 @@ public class MultiChat extends Plugin implements Listener {
 			getProxy().getPluginManager().registerCommand(this, new GroupListCommand());
 			getProxy().getPluginManager().registerCommand(this, new MultiChatCommand());
 			getProxy().getPluginManager().registerCommand(this, new DisplayCommand());
-			getProxy().getPluginManager().registerCommand(this, new LocalCommand());
-			getProxy().getPluginManager().registerCommand(this, new GlobalCommand());
 			getProxy().getPluginManager().registerCommand(this, new FreezeChatCommand());
 			getProxy().getPluginManager().registerCommand(this, new HelpMeCommand());
 			getProxy().getPluginManager().registerCommand(this, new ClearChatCommand());
@@ -205,6 +203,11 @@ public class MultiChat extends Plugin implements Listener {
 				getProxy().getPluginManager().registerCommand(this, new MsgCommand());
 				getProxy().getPluginManager().registerCommand(this, new ReplyCommand());
 				getProxy().getPluginManager().registerCommand(this, new SocialSpyCommand());
+			}
+			if (configman.config.getBoolean("global"))
+			{
+				getProxy().getPluginManager().registerCommand(this, new LocalCommand());
+				getProxy().getPluginManager().registerCommand(this, new GlobalCommand());
 			}
 			System.out.println("[MultiChat] Config Version: " + configversion);
 

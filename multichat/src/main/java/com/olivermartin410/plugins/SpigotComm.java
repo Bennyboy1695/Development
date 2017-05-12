@@ -113,6 +113,11 @@ implements PluginMessageListener, Listener
 			try
 			{
 				String playername = in.readUTF();
+				
+				if (Bukkit.getPlayer(playername) == null) {
+					return;
+				}
+				
 				/*if (vault) {
         		if (Bukkit.getPlayer(playername).getDisplayName().replaceAll("§", "&").contains(chat.getPlayerPrefix(Bukkit.getPlayer(playername))) || Bukkit.getPlayer(playername).getDisplayName().contains(chat.getPlayerPrefix(Bukkit.getPlayer(playername)))) {
         			sendMessage(Bukkit.getPlayer(playername).getDisplayName(), playername);
@@ -152,7 +157,11 @@ implements PluginMessageListener, Listener
 		{
 			public void run()
 			{
+				if (event.getPlayer() == null) {
+					return;
+				}
 				String playername = event.getPlayer().getName();
+				
 				String nickname;
 				if (nicknames.containsKey(Bukkit.getPlayer(playername).getUniqueId())) {
 					nickname = nicknames.get(Bukkit.getPlayer(playername).getUniqueId());
@@ -192,8 +201,6 @@ implements PluginMessageListener, Listener
 				return true;
 			}
 
-			// Make sure that the player specified exactly one argument (the name of the player to freeze)
-
 			if (args.length != 2) {
 				// When onCommand() returns false, the help message associated with that command is displayed.
 				return false;
@@ -204,6 +211,13 @@ implements PluginMessageListener, Listener
 			if (target == null) {
 				sender.sendMessage(ChatColor.DARK_RED + args[0] + " is not currently online so cannot be nicknamed!");
 				return true;
+			}
+			
+			if (target != sender) {
+				if (!sender.hasPermission("multichatbridge.nick.others")) {
+					sender.sendMessage(ChatColor.DARK_RED + "You do not have permission to nickname other players!");
+					return true;
+				}
 			}
 
 			UUID targetUUID = target.getUniqueId();
